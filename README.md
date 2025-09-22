@@ -104,13 +104,4 @@ timestamp,label,confiança,x1,y1,x2,y2
 - **x1, y1, x2, y2** → coordenadas da caixa delimitadora no frame  
 
 ---
-
-## 🛠️ Melhorias Futuras
-
-- Contabilizar **número total de motos por frame** e registrar no CSV.  
-- Adicionar **rastreamento (tracking)** para acompanhar cada moto ao longo do vídeo.  
-- Criar **dashboard em tempo real** para visualizar as métricas (Streamlit, Flask, etc).  
-- Persistir resultados em **banco de dados** (SQLite, MongoDB, etc).  
-
----
  
