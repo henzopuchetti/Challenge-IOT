@@ -16,7 +16,7 @@ Além disso, o projeto conta com um **dashboard em Streamlit** para visualizaç�
 ## 🚀 Funcionalidades
 
 ✔️ Carregamento do modelo **YOLOv5 pré-treinado** (Torch Hub).  
-✔️ **Leitura de vídeo** a partir de arquivo (`Motos.mp4`, `Motos2.mp4`) ou webcam.  
+✔️ **Leitura de vídeo** a partir de arquivo (`Motos.mp4`) ou webcam.  
 ✔️ **Detecção de motos em tempo real** com bounding boxes e rótulos de confiança.  
 ✔️ Exibição da saída visual em janela redimensionável no **OpenCV**.  
 ✔️ **Logs enriquecidos**:  
@@ -43,7 +43,6 @@ Além disso, o projeto conta com um **dashboard em Streamlit** para visualizaç�
 ```
 Challenge-IOT/
 │── Motos.mp4                 # Vídeo de entrada
-│── Motos2.mp4                # Outra opção de vídeo de entrada
 │── Challenge-IOT.py          # Código principal (detecção e logs)
 │── resultados_motos.csv      # Arquivo CSV gerado com as detecções
 │── detec_motos.db            # Banco SQLite com os dados (após execução)
