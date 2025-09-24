@@ -1,64 +1,99 @@
 import torch
 import cv2
 import csv
-import time
+import sqlite3
 
-# Carrega o modelo YOLOv5 pré-treinado
+#Config
+VIDEO_FILE = "Motos2.mp4"
+DB_FILE = "detec_motos.db"
+CSV_FILE = "resultados_motos.csv"
+
+#Banco de dados
+conn = sqlite3.connect(DB_FILE)
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS detections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    frame_id INTEGER,
+    timestamp REAL,
+    video_file TEXT,
+    total_motos INTEGER,
+    label TEXT,
+    confianca REAL,
+    x1 INTEGER,
+    y1 INTEGER,
+    x2 INTEGER,
+    y2 INTEGER
+)
+""")
+conn.commit()
+
+#arquivo csv
+csv_file = open(CSV_FILE, mode="w", newline="", encoding="utf-8")
+csv_writer = csv.writer(csv_file)
+csv_writer.writerow([
+    "frame_id", "timestamp", "video_file",
+    "total_motos", "label", "confiança", "x1", "y1", "x2", "y2"
+])
+
+#yolo
 model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
-
-# Abre o vídeo (ou use 0 para webcam)
-cap = cv2.VideoCapture('Motos.mp4')
+cap = cv2.VideoCapture(VIDEO_FILE)
 
 if not cap.isOpened():
     print("Erro ao abrir o vídeo")
     exit()
 
-# Cria arquivo CSV para salvar resultados
-csv_file = open("resultados_motos.csv", mode="w", newline="", encoding="utf-8")
-csv_writer = csv.writer(csv_file)
-csv_writer.writerow(["timestamp", "label", "confiança", "x1", "y1", "x2", "y2"])
-
-# Define a janela como redimensionável
 cv2.namedWindow('YOLOv5 - Detecção de Motos', cv2.WINDOW_NORMAL)
+
+frame_id = 0
+total_motos = 0
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
-    # Redimensiona o frame para caber na janela
+    frame_id += 1
     frame = cv2.resize(frame, (1000, 600))
-
-    # Converte de BGR para RGB
     img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    # Faz a detecção
     results = model(img_rgb, size=640)
-
-    # Marca o timestamp (em segundos)
     timestamp = round(cap.get(cv2.CAP_PROP_POS_MSEC) / 1000, 2)
 
-    # Percorre os objetos detectados
     for *box, conf, cls in results.xyxy[0]:
         label = results.names[int(cls)]
-        if label == 'motorcycle':
+        if label == "motorcycle":
             x1, y1, x2, y2 = map(int, box)
+            total_motos += 1
 
-            # Desenha retângulo no vídeo
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(frame, f'{label.upper()} {conf:.2f}', (x1, y1 - 10),
+            cv2.putText(frame, f'MOTO {conf:.2f}', (x1, y1 - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
-            # Salva no CSV
-            csv_writer.writerow([timestamp, label, float(conf), x1, y1, x2, y2])
+            csv_writer.writerow([
+                frame_id, timestamp, VIDEO_FILE,
+                total_motos, label, float(conf), x1, y1, x2, y2
+            ])
 
-    # Mostra o frame redimensionado
+            cursor.execute("""
+                INSERT INTO detections (
+                    frame_id, timestamp, video_file,
+                    total_motos, label, confianca, x1, y1, x2, y2
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                frame_id, timestamp, VIDEO_FILE,
+                total_motos, label, float(conf), x1, y1, x2, y2
+            ))
+            conn.commit()
+
     cv2.imshow('YOLOv5 - Detecção de Motos', frame)
 
-    # Espera 1 milissegundo (pressione 'q' para sair)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 cap.release()
 csv_file.close()
+conn.close()
 cv2.destroyAllWindows()
