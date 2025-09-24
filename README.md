@@ -1,8 +1,3 @@
-# Integrantes  
-Henzo Puchetti – RM555179  
-Luann Mariano – RM558548  
-Caio Cesar Rosa Nyimi – RM556331  
-
 # 🏍️ Detecção de Motos em Vídeo com YOLOv5
 
 Este projeto implementa um **sistema de visão computacional** para detecção de motos em vídeos utilizando o modelo **YOLOv5**.  
@@ -10,6 +5,13 @@ Este projeto implementa um **sistema de visão computacional** para detecção d
 O sistema processa o vídeo de entrada (`Motos.mp4`), identifica motos quadro a quadro, desenha bounding boxes no frame e **gera logs enriquecidos** em CSV e em **banco de dados SQLite**.  
 
 Além disso, o projeto conta com um **dashboard em Streamlit** para visualização e análise dos dados detectados.  
+
+---
+
+# Integrantes  
+Henzo Puchetti – RM555179  
+Luann Mariano – RM558548  
+Caio Cesar Rosa Nyimi – RM556331  
 
 ---
 
