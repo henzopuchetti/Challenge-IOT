@@ -17,3 +17,9 @@ sqlite-utils>=3.36.0
 streamlit>=1.27.0
 matplotlib>=3.7.0
 seaborn>=0.12.2
+
+# API para expor o banco via GET
+fastapi>=0.115.0
+uvicorn>=0.32.0
+# (opcional p/ produção)
+gunicorn>=21.2.0

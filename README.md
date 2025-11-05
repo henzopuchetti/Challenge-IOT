@@ -21,22 +21,30 @@ Caio Cesar Rosa Nyimi – RM556331
 ✔️ **Leitura de vídeo** a partir de arquivo (`Motos.mp4`) ou webcam.  
 ✔️ **Detecção de motos em tempo real** com bounding boxes e rótulos de confiança.  
 ✔️ Exibição da saída visual em janela redimensionável no **OpenCV**.  
-✔️ **Logs enriquecidos**:  
-   - `frame_id` (identificação do frame)  
-   - `timestamp` (tempo em segundos no vídeo)  
-   - `video_file` (nome do arquivo analisado)  
-   - `total_motos` (contador acumulado de motos)  
-   - `label` (classe detectada – sempre `motorcycle`)  
-   - `confiança` da predição  
-   - coordenadas do bounding box (`x1, y1, x2, y2`)  
+✔️ **Logs enriquecidos**:
+- `frame_id` (identificação do frame)  
+- `timestamp` (tempo em segundos no vídeo)  
+- `video_file` (nome do arquivo analisado)  
+- `total_motos` (contador acumulado de motos)  
+- `label` (classe detectada – sempre `motorcycle`)  
+- `confiança` da predição  
+- coordenadas do bounding box (`x1, y1, x2, y2`)  
+
 ✔️ **Persistência dupla**:  
-   - CSV (`resultados_motos.csv`)  
-   - Banco de dados **SQLite** (`detec_motos.db`)  
-✔️ **Dashboard interativo (Streamlit)** com tabelas e gráficos:  
-   - Evolução do número de motos ao longo do tempo  
-   - Total acumulado de detecções  
-   - Estatísticas básicas para análise  
-✔️ Encerramento manual do programa pressionando a tecla **`q`**.  
+- CSV (`resultados_motos.csv`)  
+- Banco de dados **SQLite** (`detec_motos.db`)  
+
+✔️ **Dashboard interativo (Streamlit)** com tabelas e gráficos.  
+
+**🆕 API HTTP (FastAPI)** para **acessar os dados do SQLite por URL** (GET).  
+- Endpoints principais:
+  - `GET /health` – status da API  
+  - `GET /videos` – lista os vídeos presentes no banco com totais  
+  - `GET /verdados/{video}` – **retorna os registros daquele vídeo** (atalho)  
+  - `GET /videos/{video}/dados?limit=&offset=&label=&from_ts=&to_ts=` – dados do vídeo com filtros e paginação  
+  - `GET /videos/{video}/resumo` – resumo (totais e janelas de tempo)
+
+> Observação: o writer habilita **WAL** no SQLite para permitir leitura pela API enquanto o vídeo ainda está sendo processado.
 
 ---
 
@@ -45,19 +53,22 @@ Caio Cesar Rosa Nyimi – RM556331
 ```
 Challenge-IOT/
 │── Motos.mp4                 # Vídeo de entrada
-│── Challenge-IOT.py          # Código principal (detecção e logs)
+│── Motos2.mp4                # (opcional) segundo vídeo
+│── Challenge-IOT.py          # Código principal (detecção e logs → CSV/SQLite)
 │── resultados_motos.csv      # Arquivo CSV gerado com as detecções
-│── detec_motos.db            # Banco SQLite com os dados (após execução)
-│── dashboard.py              # Dashboard em Streamlit para análise
+│── detec_motos.db            # Banco SQLite com os dados
+│── dashboard.py              # Dashboard em Streamlit (análise)
 │── requirements.txt          # Dependências do projeto
 │── README.md                 # Documentação do projeto
+└── api/
+    └── main.py               # 🆕 API FastAPI que expõe o SQLite por URL
 ```
 
 ---
 
 ## ⚙️ Dependências
 
-As dependências estão listadas no arquivo `requirements.txt`:  
+As dependências estão listadas no arquivo `requirements.txt`. Principais grupos:
 
 ```txt
 # Deep Learning / Visão Computacional
@@ -65,6 +76,7 @@ torch>=2.0.0
 torchvision>=0.15.0
 torchaudio>=2.0.0
 opencv-python>=4.8.0
+ultralytics>=8.0.0
 
 # Utilidades
 tqdm>=4.66.0
@@ -79,32 +91,59 @@ streamlit>=1.27.0
 matplotlib>=3.7.0
 seaborn>=0.12.2
 
-# Comunicação (IoT futuro - opcional)
-paho-mqtt>=1.6.1
+# 🆕 API HTTP
+fastapi>=0.115.0
+uvicorn>=0.32.0
+# (opcional para produção)
+gunicorn>=21.2.0
 ```
 
 ---
 
 ## ▶️ Como Executar
 
-### 1. Preparar ambiente
+### 1) Preparar ambiente
 ```bash
 python -m venv .venv
-source .venv/bin/activate   # Linux/Mac
-.venv\Scripts\activate      # Windows
+# Linux/Mac
+source .venv/bin/activate
+# Windows
+.venv\Scripts\activate
+
 pip install -r requirements.txt
 ```
 
-### 2. Rodar o detector de motos
+### 2) Rodar o detector de motos (gera CSV e SQLite)
 ```bash
 python Challenge-IOT.py
 ```
+- A janela do OpenCV será aberta; pressione **`q`** para encerrar.  
+- O banco `detec_motos.db` e o arquivo `resultados_motos.csv` serão criados/atualizados.
 
-### 3. Abrir o dashboard (análise)
+### 3) 🆕 Subir a API (para acessar o banco via URL)
+Em um **segundo terminal** (com a venv ativa):
+```bash
+uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+```
+Acesse a documentação (Swagger):  
+`http://localhost:8000/docs`
+
+**Exemplos de GET**:
+- `http://localhost:8000/health`  
+- `http://localhost:8000/videos`  
+- `http://localhost:8000/verdados/Motos2.mp4`  
+- `http://localhost:8000/videos/Motos2.mp4/dados?limit=50&offset=0`  
+- `http://localhost:8000/videos/Motos2.mp4/dados?label=motorcycle&limit=100`  
+- `http://localhost:8000/videos/Motos2.mp4/resumo`
+
+> Dica: se o banco estiver em outro caminho/nome, defina `DB_PATH` antes de subir a API.  
+> Ex.: `set DB_PATH=C:\caminho\detec_motos.db` (Windows) / `export DB_PATH=/caminho/detec_motos.db` (Linux/Mac)
+
+### 4) (Opcional) Abrir o dashboard (análise)
 ```bash
 streamlit run dashboard.py
 ```
-Acesse no navegador: [http://localhost:8501](http://localhost:8501)
+Acesse: [http://localhost:8501](http://localhost:8501)
 
 ---
 
@@ -116,8 +155,7 @@ Acesse no navegador: [http://localhost:8501](http://localhost:8501)
 - Pressione **`q`** para encerrar a execução.  
 
 ### 📑 Arquivo CSV (`resultados_motos.csv`)
-Contém as detecções em formato tabular:  
-
+Contém as detecções em formato tabular:
 ```
 frame_id,timestamp,video_file,total_motos,label,confiança,x1,y1,x2,y2
 15,0.25,Motos.mp4,1,motorcycle,0.87,123,45,300,400
@@ -127,10 +165,10 @@ frame_id,timestamp,video_file,total_motos,label,confiança,x1,y1,x2,y2
 
 ### 🗄️ Banco de Dados (`detec_motos.db`)
 - Todos os dados também são persistidos no SQLite.  
-- Pode ser consultado via **SQLite CLI**, **DB Browser for SQLite** ou com Pandas.  
-- Exemplo de consulta:
+- Exemplos rápidos de consulta:
   ```sql
   SELECT COUNT(*) FROM detections WHERE label='motorcycle';
+  SELECT * FROM detections WHERE video_file='Motos2.mp4' LIMIT 10;
   ```
 
 ### 📈 Dashboard (Streamlit)
@@ -139,3 +177,8 @@ frame_id,timestamp,video_file,total_motos,label,confiança,x1,y1,x2,y2
 - Gráfico de total acumulado de motos.  
 
 ---
+
+## ℹ️ Notas Técnicas (API + Banco)
+- O `Challenge-IOT.py` habilita **`PRAGMA journal_mode=WAL`**, **`busy_timeout`** e **`synchronous=NORMAL`** para melhorar a convivência entre **escrita contínua** (durante o vídeo) e **leituras** pela API.  
+- A API utiliza conexão **read-only** por padrão e paginação nos endpoints.  
+- CORS liberado para **GET** (ajuste `allow_origins` no `api/main.py` se precisar restringir).
